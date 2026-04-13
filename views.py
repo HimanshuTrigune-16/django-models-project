@@ -19,11 +19,28 @@ def submit(request):
     return render(request, "submit.html")
 
 
-def show_exam_result(request):
-    submissions = Submission.objects.all()
+def show_exam_result(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
 
-    total_questions = submissions.count()
-    return render(request, "exam_result.html", {
-        "submissions": submissions,
-        "total": total_questions
-    })
+    submissions = Submission.objects.filter(course=course)
+
+    total_score = 0
+    possible_score = 0
+    selected_ids = []
+
+    for submission in submissions:
+        choices = submission.choices.all()
+        for choice in choices:
+            selected_ids.append(choice.id)
+            if choice.is_correct:
+                total_score += choice.question.grade
+        possible_score += submission.question.grade
+
+    context = {
+        'course': course,
+        'selected_ids': selected_ids,
+        'grade': total_score,
+        'possible': possible_score
+    }
+
+    return render(request, 'exam_result_bootstrap.html', context)
